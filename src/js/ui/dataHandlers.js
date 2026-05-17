@@ -1,6 +1,6 @@
 import { patientData } from '../config/mockData.js';
-import { renderData } from './render.js';
-import { toggleEditProfile } from './navigation.js';
+import { renderData, renderMedicationsTab, renderHistorialTab } from './render.js';
+import { toggleEditProfile, toggleMedicationForm, toggleHistoryView } from './navigation.js';
 
 export function saveProfile(event) {
     event.preventDefault();
@@ -17,31 +17,83 @@ export function saveProfile(event) {
     alert('Perfil actualizado correctamente.');
 }
 
-export function addHistorial() {
-    const fecha = prompt("Introduce la fecha del evento (por ejemplo, Marzo 2023):");
-    const evento = prompt("Introduce el nombre del evento (por ejemplo, Consulta médica):");
-    const lugar = prompt("Introduce el lugar del evento (por ejemplo, Hospital General):");
-    const desc = prompt("Introduce una descripción breve del evento:");
+// --- MEDICACIÓN ---
+export function saveMedication(event) {
+    event.preventDefault();
 
-    if (fecha && evento && lugar && desc) {
-        patientData.historial.push({ fecha, evento, lugar, desc });
-        renderData();
-        if (window.lucide) window.lucide.createIcons();
-        alert("Evento añadido correctamente.");
-    } else {
-        alert("Todos los campos son obligatorios.");
-    }
+    const nombre = document.getElementById('new-med-name').value;
+    const dosis = document.getElementById('new-med-dose').value;
+    const frecuencia = document.getElementById('new-med-freq').value;
+    const turno = document.getElementById('new-med-turno').value;
+
+    const newMed = {
+        nombre: nombre,
+        dosis: dosis,
+        frecuencia: frecuencia,
+        turno: turno,
+        proxima: "PENDIENTE",
+        color: "slate", 
+        icon: "pill"
+    };
+
+    patientData.medicacion.push(newMed);
+
+    renderMedicationsTab(turno);
+    if (window.lucide) window.lucide.createIcons();
+    
+    toggleMedicationForm(false);
+    event.target.reset();
+    
+    alert('Medicamento añadido con éxito');
 }
 
-export function deleteHistorial() {
-    if (patientData.historial.length > 0) {
-        if (confirm("¿Estás seguro de que deseas eliminar el último evento del historial?")) {
-            patientData.historial.pop();
-            renderData();
-            if (window.lucide) window.lucide.createIcons();
-            alert("Último evento eliminado correctamente.");
-        }
-    } else {
-        alert("No hay eventos en el historial para eliminar.");
+
+
+// --- HISTORIAL MÉDICO ---
+export function saveHistoryEvent(event) {
+    event.preventDefault();
+
+    const tipo = document.getElementById('hist-tipo').value;
+    const titulo = document.getElementById('hist-titulo').value;
+    const lugar = document.getElementById('hist-lugar').value;
+    const fecha = document.getElementById('hist-fecha').value;
+    const hora = document.getElementById('hist-hora').value;
+    const desc = document.getElementById('hist-desc').value;
+
+    // Formatear la fecha para el diseño
+    const dateObj = new Date(fecha);
+    const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaFormat = dateObj.toLocaleDateString('es-ES', opciones);
+    const mesAnio = `${dateObj.toLocaleString('es-ES', { month: 'long' })} ${dateObj.getFullYear()}`.toUpperCase();
+
+    const nuevoRegistro = {
+        id: Date.now(), // ID único temporal
+        mesAnio: mesAnio,
+        fechaCompleta: fechaFormat,
+        hora: hora,
+        tipo: tipo,
+        titulo: titulo,
+        lugar: lugar,
+        desc: desc,
+        especialidad: "General", 
+        medico: "No especificado"
+    };
+
+    // Insertar al principio para que salga el más reciente primero
+    patientData.historial.unshift(nuevoRegistro);
+
+    renderHistorialTab();
+    toggleHistoryView('list');
+    event.target.reset(); // Limpiar el formulario
+}
+
+export function deleteHistoryEvent(id) {
+    if (confirm("¿Estás seguro de que deseas eliminar este registro permanentemente?")) {
+        // Filtrar el array para quitar el elemento con ese ID
+        patientData.historial = patientData.historial.filter(h => h.id !== id);
+        
+        renderHistorialTab();
+        toggleHistoryView('list'); // Volver a la lista tras borrar
+        alert("Registro eliminado correctamente.");
     }
 }

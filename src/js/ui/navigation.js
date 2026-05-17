@@ -1,5 +1,6 @@
 import { patientData } from '../config/mockData.js';
 import { stopNFC } from '../core/nfcManager.js';
+import { renderMedicationsTab } from './render.js';
 
 export function switchTab(tabId, btnElement) {
     document.querySelectorAll('.tab-content').forEach(tab => {
@@ -84,4 +85,64 @@ export function toggleEditProfile(show) {
         editBtn.classList.remove('hidden');
         nfcBtn.classList.remove('hidden');
     }
+}
+
+export function toggleMedicationForm(show) {
+    const listView = document.getElementById('meds-list-view');
+    const formView = document.getElementById('meds-form-view');
+
+    if (show) {
+        listView.classList.add('hidden');
+        formView.classList.remove('hidden');
+    } else {
+        listView.classList.remove('hidden');
+        formView.classList.add('hidden');
+    }
+}
+
+export function filterMedications(turno) {
+    // Solución al problema de la 'ñ' vs 'n' en el ID del HTML
+    const idTurno = turno === 'mañana' ? 'manana' : turno;
+
+    // 1. Resetear estilos de todos los botones
+    document.querySelectorAll('.med-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-[#00529b]', 'text-white', 'shadow-md');
+        btn.classList.add('text-slate-500');
+        
+        const icon = btn.querySelector('.lucide');
+        if (icon) {
+            icon.classList.add('hidden');
+        }
+    });
+
+    // 2. Aplicar estilos al botón activo usando el ID corregido
+    const activeBtn = document.getElementById(`btn-${idTurno}`);
+    if (activeBtn) {
+        activeBtn.classList.remove('text-slate-500');
+        activeBtn.classList.add('bg-[#00529b]', 'text-white', 'shadow-md');
+        
+        const activeIcon = activeBtn.querySelector('.lucide');
+        if (activeIcon) {
+            activeIcon.classList.remove('hidden');
+        }
+    }
+
+    // 3. ACTIVAMOS EL FILTRO REAL DE LAS TARJETAS
+    renderMedicationsTab(turno);
+}
+
+export function toggleHistoryView(view) {
+    const listView = document.getElementById('history-list-view');
+    const formView = document.getElementById('history-form-view');
+    const detailView = document.getElementById('history-detail-view');
+
+    // Ocultar todas
+    listView.classList.add('hidden');
+    formView.classList.add('hidden');
+    detailView.classList.add('hidden');
+
+    // Mostrar la solicitada
+    if (view === 'list') listView.classList.remove('hidden');
+    if (view === 'form') formView.classList.remove('hidden');
+    if (view === 'detail') detailView.classList.remove('hidden');
 }

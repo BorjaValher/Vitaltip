@@ -63,27 +63,52 @@ export function closeDataModal() {
 }
 
 export function toggleEditProfile(show) {
-    const profileInfo = document.getElementById('profile-info');
-    const form = document.getElementById('edit-profile-form');
-    const editBtn = document.getElementById('edit-profile-btn');
-    const nfcBtn = document.getElementById('write-nfc-btn');
+    const viewMode = document.getElementById('profile-view-mode');
+    const editForm = document.getElementById('edit-profile-form');
+    const nfcContainer = document.getElementById('nfc-action-container');
 
     if (show) {
-        document.getElementById('edit-nombre').value = patientData.perfil.nombre;
+        // 1. CARGAR DATOS EN LOS INPUTS PARA NO VOLVER A ESCRIBIRLOS
+        document.getElementById('edit-nombre').value = patientData.perfil.nombre || '';
+        document.getElementById('edit-dni').value = patientData.perfil.dni || '';
         document.getElementById('edit-altura').value = patientData.perfil.altura || '';
         document.getElementById('edit-peso').value = patientData.perfil.peso || '';
-        document.getElementById('edit-direccion').value = patientData.perfil.direccion;
-        document.getElementById('edit-sangre').value = patientData.perfil.sangre;
+        document.getElementById('edit-direccion').value = patientData.perfil.direccion || '';
+        document.getElementById('edit-sangre').value = patientData.perfil.sangre || 'O+';
+        
+        // Datos del seguro
+        document.getElementById('edit-seguro-compania').value = patientData.seguro?.compania || '';
+        document.getElementById('edit-seguro-poliza').value = patientData.seguro?.poliza || '';
+        document.getElementById('edit-seguro-tipo').value = patientData.seguro?.tipo || '';
+        
+        // Contacto de Emergencia 1 (Principal)
+        if (patientData.contactos && patientData.contactos[0]) {
+            document.getElementById('edit-contacto1-nombre').value = patientData.contactos[0].nombre || '';
+            document.getElementById('edit-contacto1-tel').value = patientData.contactos[0].telefono || '';
+        } else {
+            document.getElementById('edit-contacto1-nombre').value = '';
+            document.getElementById('edit-contacto1-tel').value = '';
+        }
+        
+        // Contacto de Emergencia 2 (Secundario)
+        if (patientData.contactos && patientData.contactos[1]) {
+            document.getElementById('edit-contacto2-nombre').value = patientData.contactos[1].nombre || '';
+            document.getElementById('edit-contacto2-tel').value = patientData.contactos[1].telefono || '';
+        } else {
+            document.getElementById('edit-contacto2-nombre').value = '';
+            document.getElementById('edit-contacto2-tel').value = '';
+        }
 
-        profileInfo.classList.add('hidden');
-        form.classList.remove('hidden');
-        editBtn.classList.add('hidden');
-        nfcBtn.classList.add('hidden');
+        // 2. Intercambiar vistas de la interfaz
+        viewMode.classList.add('hidden');
+        if (nfcContainer) nfcContainer.classList.add('hidden');
+        editForm.classList.remove('hidden');
+        
+        if (window.lucide) window.lucide.createIcons();
     } else {
-        profileInfo.classList.remove('hidden');
-        form.classList.add('hidden');
-        editBtn.classList.remove('hidden');
-        nfcBtn.classList.remove('hidden');
+        editForm.classList.add('hidden');
+        viewMode.classList.remove('hidden');
+        if (nfcContainer) nfcContainer.classList.remove('hidden');
     }
 }
 

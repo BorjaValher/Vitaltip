@@ -18,6 +18,11 @@ import {
     deleteHistoryEvent
 } from './ui/dataHandlers.js';
 
+import { 
+    toggleAuthTab, handleLogin, handleRegister, 
+    checkSession, logout, handleDeleteAccount,
+    toggleForgotPassword, handleForgotPassword, handleUpdatePassword 
+} from './core/authManager.js';
 
 // 2. EXPOSICIÓN AL ENTORNO GLOBAL (WINDOW)
 // General y Perfil
@@ -30,6 +35,10 @@ window.toggleNfcOverlay = toggleNfcOverlay;
 window.closeDataModal = closeDataModal;
 window.toggleEditProfile = toggleEditProfile;
 window.saveProfile = saveProfile;
+window.toggleAuthTab = toggleAuthTab;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.logout = logout;
 
 // Medicación
 window.toggleMedicationForm = toggleMedicationForm;
@@ -42,11 +51,19 @@ window.renderHistoryDetail = renderHistoryDetail;
 window.saveHistoryEvent = saveHistoryEvent;
 window.deleteHistoryEvent = deleteHistoryEvent;
 
+// Autenticación (Supabase)
+window.toggleAuthTab = toggleAuthTab;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.logout = logout;
+window.handleDeleteAccount = handleDeleteAccount;
+window.toggleForgotPassword = toggleForgotPassword;
+window.handleForgotPassword = handleForgotPassword;
+window.handleUpdatePassword = handleUpdatePassword;
+
 // 3. INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', () => {
-    renderData();                  // Carga datos generales
-    renderMedicationsTab('tarde'); // Carga pastillas de la tarde por defecto
-    renderHistorialTab();          // Carga el timeline del historial
+    checkSession();
     
     if (window.lucide) {
         window.lucide.createIcons();

@@ -1,20 +1,69 @@
 import { patientData } from '../config/mockData.js';
 import { renderData, renderMedicationsTab, renderHistorialTab } from './render.js';
 import { toggleEditProfile, toggleMedicationForm, toggleHistoryView } from './navigation.js';
+import { supabase } from '../config/supabaseClient.js';
 
-export function saveProfile(event) {
+
+export async function saveProfile(event) {
     event.preventDefault();
 
-    patientData.perfil.nombre = document.getElementById('edit-nombre').value;
-    patientData.perfil.altura = document.getElementById('edit-altura').value;
-    patientData.perfil.peso = document.getElementById('edit-peso').value;
-    patientData.perfil.direccion = document.getElementById('edit-direccion').value;
-    patientData.perfil.sangre = document.getElementById('edit-sangre').value;
+    // 1. Capturar todos los campos del cuestionario
+    const nombre = document.getElementById('edit-nombre').value;
+    const dni = document.getElementById('edit-dni').value;
+    const altura = document.getElementById('edit-altura').value;
+    const peso = document.getElementById('edit-peso').value;
+    const direccion = document.getElementById('edit-direccion').value;
+    const sangre = document.getElementById('edit-sangre').value;
 
+    const seguro_compania = document.getElementById('edit-seguro-compania').value;
+    const seguro_poliza = document.getElementById('edit-seguro-poliza').value;
+    const seguro_tipo = document.getElementById('edit-seguro-tipo').value;
+
+    const contactos = [];
+    const c1Nombre = document.getElementById('edit-contacto1-nombre').value;
+    const c1Tel = document.getElementById('edit-contacto1-tel').value;
+    if (c1Nombre || c1Tel) {
+        contactos.push({ nombre: c1Nombre, telefono: c1Tel, relacion: "Principal" });
+    }
+
+    const c2Nombre = document.getElementById('edit-contacto2-nombre').value;
+    const c2Tel = document.getElementById('edit-contacto2-tel').value;
+    if (c2Nombre || c2Tel) {
+        contactos.push({ nombre: c2Nombre, telefono: c2Tel, relacion: "Secundario" });
+    }
+
+    // 2. GUARDAR EN LA NUBE (Supabase Auth Metadata)
+    const { data, error } = await supabase.auth.updateUser({
+        data: {
+            full_name: nombre,
+            dni: dni,
+            altura: altura,
+            peso: peso,
+            direccion: direccion,
+            blood_type: sangre,
+            seguro_compania: seguro_compania,
+            seguro_poliza: seguro_poliza,
+            seguro_tipo: seguro_tipo,
+            contactos: contactos
+        }
+    });
+
+    if (error) {
+        alert("Error al sincronizar con Supabase: " + error.message);
+        return;
+    }
+
+    // 3. Si la nube responde OK, actualizamos nuestro objeto global local
+    patientData.perfil = { nombre, dni, altura, peso, direccion, sangre };
+    patientData.seguro = { compania: seguro_compania, poliza: seguro_poliza, tipo: seguro_tipo };
+    patientData.contactos = contactos;
+
+    // 4. Refrescar los componentes visuales e iconos
     renderData();
     if (window.lucide) window.lucide.createIcons();
+    
     toggleEditProfile(false);
-    alert('Perfil actualizado correctamente.');
+    alert('Perfil guardado con éxito y sincronizado en la nube.');
 }
 
 // --- MEDICACIÓN ---

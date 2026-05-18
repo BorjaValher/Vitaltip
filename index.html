@@ -79,7 +79,12 @@
                             <input id="reg-pass" type="password" required placeholder="Contraseña (mín. 6 caracteres)" class="w-full border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#00529b]">
                         </div>
                     </div>
-
+                    <div>
+                        <div class="relative">
+                            <i data-lucide="lock" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i>
+                            <input id="reg-pass-confirm" type="password" required placeholder="Repite la contraseña" class="w-full border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#d32f2f] focus:ring-1 focus:ring-red-100 transition-all">
+                        </div>
+                    </div>
                     <p class="text-[10px] font-bold text-[#d32f2f] border-b border-slate-100 pb-1 mt-4 mb-2 uppercase flex items-center gap-1">
                         <i data-lucide="file-warning" class="w-3 h-3"></i> Datos Médicos (Crucial)
                     </p>
@@ -155,18 +160,18 @@
 
     <div id="app-container" class="hidden">
         
-        <header id="nfc-header" class="bg-[#00529b] text-white p-5 pt-8 rounded-b-[2.5rem] shadow-xl sticky top-0 z-50">
-            <div class="flex justify-between items-center mb-4">
+        <header id="nfc-header" class="bg-[#00529b] text-white px-5 py-4 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
+            <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <div class="bg-white p-2 rounded-xl shadow-lg">
-                        <i data-lucide="heart-pulse" class="text-[#d32f2f] w-7 h-7"></i>
+                    <div class="bg-white p-2 rounded-xl shadow-md">
+                        <i data-lucide="heart-pulse" class="text-[#d32f2f] w-6 h-6"></i>
                     </div>
                     <div>
-                        <h1 class="text-2xl font-black tracking-tight leading-none">VitalTip</h1>
-                        <span class="text-[10px] uppercase tracking-widest opacity-80 font-bold text-blue-200" id="header-status">Digital Health ID</span>
+                        <h1 class="text-xl font-black tracking-tight leading-none">VitalTip</h1>
+                        <span class="text-[9px] uppercase tracking-widest opacity-80 font-bold text-blue-200" id="header-status">Digital Health ID</span>
                     </div>
                 </div>
-                <button onclick="readNFC()" class="bg-blue-600 border border-blue-400 p-4 rounded-2xl shadow-lg transition-all active:scale-90">
+                <button onclick="readNFC()" class="bg-blue-600 border border-blue-400 p-3.5 rounded-2xl shadow-lg transition-all active:scale-90">
                     <i data-lucide="nfc" class="w-6 h-6 text-white"></i>
                 </button>
             </div>
@@ -337,7 +342,7 @@
                                 <i data-lucide="user" class="w-12 h-12"></i>
                             </div>
                             <h2 id="perfil-nombre" class="text-xl font-black text-slate-800">--</h2>
-                            <p id="perfil-id" class="text-sm text-slate-500 font-mono mt-1">--</p>
+                            <p id="perfil-dni" class="text-sm text-slate-500 font-mono mt-1">--</p>
                         </div>
                         <div class="grid grid-cols-2 gap-4 mb-6" id="perfil-stats-container"></div>
                         <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
@@ -369,6 +374,10 @@
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nombre Completo</label>
                             <input id="edit-nombre" type="text" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha de Nacimiento</label>
+                            <input id="edit-nacimiento" type="date" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DNI / Pasaporte</label>
@@ -527,7 +536,7 @@
                     <div class="flex justify-between items-center mb-4">
                         <div>
                             <h3 class="font-bold text-slate-800">Horario de Hoy</h3>
-                            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">2 DOSIS PENDIENTES</p>
+                            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Planificación Activa</p>
                         </div>
                         <div class="bg-blue-50 p-2 rounded-xl text-[#00529b]">
                             <i data-lucide="calendar" class="w-5 h-5"></i>
@@ -548,13 +557,15 @@
                         </button>
                     </div>
                 </div>
-                <div id="meds-cards-container" class="space-y-4">
-                </div>
-                <button onclick="toggleMedicationForm(true)" class="w-full mt-6 bg-[#00529b] text-white py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
+                
+                <div id="meds-cards-container" class="space-y-4"></div>
+                
+                <button onclick="openAddMedicationForm()" class="w-full mt-6 bg-[#00529b] text-white py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i>
                     AÑADIR MEDICAMENTO
                 </button>
-                <button class="w-full mt-3 bg-white text-slate-700 border border-slate-300 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+                
+                <button onclick="toggleMedsHistoryView(true)" class="w-full mt-3 bg-white text-slate-700 border border-slate-300 py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
                     <i data-lucide="history" class="w-5 h-5"></i>
                     Ver Historial de Medicación
                 </button>
@@ -565,25 +576,28 @@
                     <button onclick="toggleMedicationForm(false)" class="p-2 text-slate-600 active:scale-90 transition-transform">
                         <i data-lucide="arrow-left" class="w-6 h-6"></i>
                     </button>
-                    <h2 class="text-xl font-black text-slate-800">Añadir Medicación</h2>
+                    <h2 id="form-med-title" class="text-xl font-black text-slate-800">Añadir Medicación</h2>
                 </div>
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                     <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-md">
                         <i data-lucide="pill" class="w-8 h-8 text-[#00529b]"></i>
                     </div>
+                    
                     <form onsubmit="saveMedication(event)" class="space-y-4">
+                        <input type="hidden" id="med-id" value="">
+
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nombre del Medicamento</label>
                             <div class="relative mt-1">
                                 <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
-                                <input id="new-med-name" type="text" required placeholder="Ej. Amoxicilina" class="w-full border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm font-bold text-slate-800 focus:border-[#00529b] focus:ring-1 focus:ring-[#00529b] outline-none transition-all bg-slate-50">
+                                <input id="new-med-name" type="text" required placeholder="Ej. Amoxicilina" class="w-full border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm font-bold text-slate-800 focus:border-[#00529b] outline-none bg-slate-50">
                             </div>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dosis</label>
                             <div class="relative mt-1">
                                 <i data-lucide="syringe" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
-                                <input id="new-med-dose" type="text" required placeholder="Ej. 500 mg" class="w-full border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm font-bold text-slate-800 focus:border-[#00529b] focus:ring-1 focus:ring-[#00529b] outline-none transition-all bg-slate-50">
+                                <input id="new-med-dose" type="text" required placeholder="Ej. 500 mg" class="w-full border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm font-bold text-slate-800 focus:border-[#00529b] outline-none bg-slate-50">
                             </div>
                         </div>
                         <div>
@@ -606,11 +620,24 @@
                             <i data-lucide="save" class="w-5 h-5"></i>
                             Guardar Medicamento
                         </button>
-                        <button type="button" onclick="toggleMedicationForm(false)" class="w-full mt-2 bg-transparent text-slate-500 py-3 rounded-2xl font-bold text-sm active:text-slate-800 transition-colors">
+                        <button type="button" onclick="toggleMedicationForm(false)" class="w-full mt-2 bg-transparent text-slate-500 py-3 rounded-2xl font-bold text-sm active:text-slate-800">
                             Cancelar
                         </button>
                     </form>
                 </div>
+            </div>
+
+            <div id="meds-history-view" class="hidden space-y-6">
+                <div class="flex items-center gap-4 mb-2">
+                    <button onclick="toggleMedsHistoryView(false)" class="p-2 text-slate-600 active:scale-90 transition-transform">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                    </button>
+                    <h2 class="text-xl font-black text-slate-800">Historial de Tomas</h2>
+                </div>
+                <p class="text-xs text-slate-500 -mt-4 ml-2">Registro clínico de las dosis validadas en el sistema.</p>
+                
+                <div id="meds-history-container" class="space-y-3">
+                    </div>
             </div>
         </main>
 
@@ -676,6 +703,31 @@
         </div>
 
     </div>
+
+
+</div> <div id="custom-dialog" class="hidden fixed inset-0 z-[999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"></div>
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div class="p-8 text-center border-b border-slate-100">
+            <div id="dialog-icon-container" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner border-4 border-white">
+                <i id="dialog-icon" data-lucide="info" class="w-8 h-8"></i>
+            </div>
+            <h3 id="dialog-title" class="text-2xl font-black text-slate-800 tracking-tight">Título</h3>
+            <p id="dialog-message" class="text-sm text-slate-500 mt-2 leading-relaxed">Mensaje descriptivo.</p>
+        </div>
+        <div class="p-4 flex gap-3 bg-slate-50">
+            <button id="dialog-btn-cancel" class="hidden flex-1 bg-white text-slate-600 border border-slate-200 py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest active:scale-95 transition-all">
+                Cancelar
+            </button>
+            <button id="dialog-btn-ok" class="flex-1 bg-[#00529b] text-white py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-md active:scale-95 transition-all">
+                Aceptar
+            </button>
+        </div>
+    </div>
+</div>
+
+</div>
+
 
     <script type="module" src="./src/js/main.js"></script>
 </body>

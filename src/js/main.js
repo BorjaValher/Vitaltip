@@ -15,7 +15,9 @@ import {
     showDeleteConfirmation, 
     cancelDelete,
     initScrollNavigation,
-    openSubSetting, closeSubSetting
+    openSubSetting, closeSubSetting,
+    openAddMedicationForm, toggleMedsHistoryView,
+    showCustomDialog
 } from './ui/navigation.js';
 import { 
     saveProfile, 
@@ -23,7 +25,8 @@ import {
     saveHistoryEvent,
     deleteHistoryEvent,
     editHistoryEvent,
-    saveSeguro, addContacto, deleteContacto, addAlergia, deleteAlergia
+    saveSeguro, addContacto, deleteContacto, addAlergia, deleteAlergia,
+    editMedication, deleteMedication, takeMedication
 } from './ui/dataHandlers.js';
 
 import { 
@@ -52,6 +55,7 @@ window.showDeleteConfirmation = showDeleteConfirmation;
 window.cancelDelete = cancelDelete;
 window.openSubSetting = openSubSetting;
 window.closeSubSetting = closeSubSetting;
+window.showCustomDialog = showCustomDialog;
 
 window.saveSeguro = saveSeguro;
 window.addContacto = addContacto;
@@ -63,6 +67,11 @@ window.deleteAlergia = deleteAlergia;
 window.toggleMedicationForm = toggleMedicationForm;
 window.filterMedications = filterMedications;
 window.saveMedication = saveMedication;
+window.openAddMedicationForm = openAddMedicationForm; 
+window.toggleMedsHistoryView = toggleMedsHistoryView; 
+window.editMedication = editMedication;               
+window.deleteMedication = deleteMedication;           
+window.takeMedication = takeMedication;
 
 // Historial
 window.toggleHistoryView = toggleHistoryView;

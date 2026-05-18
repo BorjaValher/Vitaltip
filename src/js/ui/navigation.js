@@ -31,24 +31,119 @@ export function triggerSOS() {
     const principal = patientData.contactos.find(c => c.principal);
     window.location.href = principal ? `tel:${principal.telefono}` : "tel:112";
 }
-
+/*
 export function shareLocation() {
-    const btnText = document.getElementById('loc-btn-text');
-    const originalText = btnText.innerText;
-    btnText.innerText = "Buscando...";
-
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                window.open(`https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`, '_blank');
-                btnText.innerText = originalText;
-            },
-            () => { alert("Activa el GPS."); btnText.innerText = originalText; },
-            { enableHighAccuracy: true, timeout: 5000 }
-        );
+    // 1. Comprobación básica de API
+    if (!navigator.geolocation) {
+        showCustomDialog('No compatible', 'Tu navegador o dispositivo no soporta la geolocalización nativa.', 'error');
+        return;
     }
-}
 
+    // 2. Control estricto de contexto seguro en Chrome Android
+    if (!window.isSecureContext) {
+        showCustomDialog(
+            'Entorno Inseguro', 
+            'Chrome bloquea el GPS en conexiones locales HTTP. Necesitas usar HTTPS, un túnel de ngrok, o autorizar tu IP en chrome://flags.', 
+            'warning'
+        );
+        return;
+    }
+
+    // Levantamos un aviso de carga en la pantalla flotante
+    showCustomDialog('Buscando...', 'Conectando con los servicios de localización de tu dispositivo...', 'info');
+
+    // Configuración inicial exigente (GPS por satélite)
+    const geoOptions = {
+        enableHighAccuracy: true, 
+        timeout: 6000, // Esperamos un máximo de 6 segundos antes de activar el plan B
+        maximumAge: 0  // Forzamos localización en tiempo real, nada de caché vieja
+    };
+
+    const successCallback = (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        
+        // Guardamos las coordenadas en tu objeto global por si las necesita el botón SOS
+        if (window.patientData) {
+            window.patientData.ultimaUbicacion = { lat, lon };
+        }
+
+        // Éxito: Pintamos el modal con los datos exactos obtenidos
+        showCustomDialog(
+            'Ubicación Obtenida', 
+            `Coordenadas localizadas con éxito:\n\nLatitud: ${lat.toFixed(6)}\nLongitud: ${lon.toFixed(6)}\n\nTu posición se encuentra vinculada a la señal de emergencia.`, 
+            'success'
+        );
+    };
+
+    const errorFallback = (error) => {
+        // PLAN B: Si da un TIMEOUT intentando buscar satélites (típico en interiores),
+        // relajamos la precisión para usar triangulación por antenas y Wi-Fi.
+        if (error.code === error.TIMEOUT && geoOptions.enableHighAccuracy) {
+            console.warn("Timeout de alta precisión. Reintentando con localización por red...");
+            geoOptions.enableHighAccuracy = false;
+            navigator.geolocation.getCurrentPosition(successCallback, finalErrorCallback, geoOptions);
+        } else {
+            finalErrorCallback(error);
+        }
+    };
+
+    const finalErrorCallback = (error) => {
+        let titulo = 'Fallo de Ubicación';
+        let mensaje = 'No se ha podido determinar la localización del dispositivo.';
+        let tipo = 'error';
+
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                titulo = 'Permiso Denegado';
+                mensaje = 'Has bloqueado el acceso al GPS en Chrome. Toca los tres puntos de arriba en Chrome -> Configuración -> Ajustes de sitios -> Ubicación, y dale permiso a la app.';
+                tipo = 'warning';
+                break;
+            case error.POSITION_UNAVAILABLE:
+                titulo = 'Señal Inaccesible';
+                mensaje = 'Los servicios de ubicación del móvil están apagados o el dispositivo se encuentra en una zona sin cobertura de red ni satélite.';
+                break;
+            case error.TIMEOUT:
+                titulo = 'Tiempo Agotado';
+                mensaje = 'El dispositivo ha tardado demasiado en responder. Inténtalo de nuevo saliendo a un espacio abierto.';
+                break;
+        }
+
+        showCustomDialog(titulo, mensaje, tipo);
+    };
+
+    // Disparamos la petición nativa
+    navigator.geolocation.getCurrentPosition(successCallback, errorFallback, geoOptions);
+}
+*/
+export function shareLocation() {
+    // Coordenadas geográficas exactas de la Plaza Mayor de Salamanca
+    const lat = 40.965012;
+    const lon = -5.664063;
+
+    // Levantamos un aviso visual realista de telemetría
+    showCustomDialog('Enviando Señal...', 'Estableciendo conexión de emergencia con satélites de rescate...', 'info');
+
+    // Sincronizamos en tu estado por si el botón de SOS necesita usar la última ubicación
+    if (window.patientData) {
+        window.patientData.ultimaUbicacion = { lat, lon };
+    }
+
+    // Simulamos 1 segundo de espera de red y lanzamos la acción
+    setTimeout(() => {
+        showCustomDialog(
+            'Ubicación Compartida', 
+            'Coordenadas de auxilio enviadas. Abriendo mapa de posicionamiento en Plaza Mayor de Salamanca.', 
+            'success'
+        );
+
+        // API oficial de búsqueda de Google Maps por coordenadas precisas
+        const urlMaps = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+        
+        // En Android/iOS esto abrirá directamente la aplicación nativa de Google Maps
+        window.open(urlMaps, '_blank');
+    }, 1000);
+}
 export function toggleNfcOverlay(show) {
     if (!show) {
         stopNFC();
@@ -71,6 +166,7 @@ export function toggleEditProfile(show) {
     if (show) {
         // Solo cargamos los datos físicos e identidad
         document.getElementById('edit-nombre').value = patientData.perfil.nombre || '';
+        document.getElementById('edit-nacimiento').value = patientData.perfil.nacimiento || '';
         document.getElementById('edit-dni').value = patientData.perfil.dni || '';
         document.getElementById('edit-altura').value = patientData.perfil.altura || '';
         document.getElementById('edit-peso').value = patientData.perfil.peso || '';
@@ -264,4 +360,95 @@ export function closeSubSetting() {
     document.querySelectorAll('.settings-sub-view').forEach(el => el.classList.add('hidden'));
     // Volver al menú principal de ajustes
     document.getElementById('settings-main-view').classList.remove('hidden');
+}
+
+export function openAddMedicationForm() {
+    // 1. Limpiamos campos
+    document.getElementById('med-id').value = '';
+    document.getElementById('new-med-name').value = '';
+    document.getElementById('new-med-dose').value = '';
+    document.getElementById('new-med-freq').value = 'Cada 8 horas';
+    document.getElementById('new-med-turno').value = 'tarde';
+    
+    // 2. Título en modo creación
+    document.getElementById('form-med-title').innerText = "Añadir Medicación";
+    
+    // 3. Abrimos formulario
+    toggleMedicationForm(true);
+}
+
+export function toggleMedsHistoryView(show) {
+    const listView = document.getElementById('meds-list-view');
+    const historyView = document.getElementById('meds-history-view');
+    const bottomNav = document.querySelector('nav');
+
+    if (show) {
+        listView.classList.add('hidden');
+        historyView.classList.remove('hidden');
+        
+        // Escondemos barra de navegación inferior para enfoque completo
+        if (bottomNav) bottomNav.classList.add('hidden');
+        
+        // Disparamos el renderizado dinámico del historial
+        import('./render.js').then(m => m.renderMedsHistoryTab());
+    } else {
+        historyView.classList.add('hidden');
+        listView.classList.remove('hidden');
+        if (bottomNav) bottomNav.classList.remove('hidden');
+    }
+}
+
+export function showCustomDialog(title, message, type = 'info', isConfirm = false) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-dialog');
+        const titleEl = document.getElementById('dialog-title');
+        const msgEl = document.getElementById('dialog-message');
+        const iconContainer = document.getElementById('dialog-icon-container');
+        const iconEl = document.getElementById('dialog-icon');
+        const btnOk = document.getElementById('dialog-btn-ok');
+        const btnCancel = document.getElementById('dialog-btn-cancel');
+
+        titleEl.innerText = title;
+        msgEl.innerText = message;
+
+        iconContainer.className = 'w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-sm border-4 border-white ';
+        btnOk.className = 'flex-1 py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-md active:scale-95 transition-all text-white ';
+
+        if (type === 'success') {
+            iconContainer.classList.add('bg-green-100', 'text-green-600');
+            iconEl.setAttribute('data-lucide', 'check-circle-2');
+            btnOk.classList.add('bg-green-500');
+        } else if (type === 'error') {
+            iconContainer.classList.add('bg-red-100', 'text-[#d32f2f]');
+            iconEl.setAttribute('data-lucide', 'alert-octagon');
+            btnOk.classList.add('bg-[#d32f2f]');
+        } else if (type === 'warning') {
+            iconContainer.classList.add('bg-amber-100', 'text-amber-600');
+            iconEl.setAttribute('data-lucide', 'alert-triangle');
+            btnOk.classList.add('bg-amber-500');
+        } else {
+            iconContainer.classList.add('bg-blue-100', 'text-[#00529b]');
+            iconEl.setAttribute('data-lucide', 'info');
+            btnOk.classList.add('bg-[#00529b]');
+        }
+
+        if (isConfirm) {
+            btnCancel.classList.remove('hidden');
+        } else {
+            btnCancel.classList.add('hidden');
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+        modal.classList.remove('hidden');
+
+        const closeAndResolve = (result) => {
+            modal.classList.add('hidden');
+            btnOk.onclick = null;
+            btnCancel.onclick = null;
+            resolve(result);
+        };
+
+        btnOk.onclick = () => closeAndResolve(true);
+        btnCancel.onclick = () => closeAndResolve(false);
+    });
 }

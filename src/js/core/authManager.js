@@ -3,6 +3,7 @@
 import { supabase } from '../config/supabaseClient.js';
 import { renderData, renderMedicationsTab, renderHistorialTab } from '../ui/render.js';
 import { patientData } from '../config/mockData.js'; 
+import { showCustomDialog } from '../ui/navigation.js';
 
 // --- TABS Y VISTAS DE AUTH ---
 export function toggleAuthTab(tab) {
@@ -24,67 +25,270 @@ export function toggleAuthTab(tab) {
     }
 }
 
-// --- LOGIN Y REGISTRO ---
+// --- LOGIN (INICIO DE SESIÓN) ---
 export async function handleLogin(event) {
     event.preventDefault();
     const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-pass').value;
+    const pass = document.getElementById('login-pass').value;
+    const btn = event.target.querySelector('button[type="submit"]');
 
-    // 1. Verificamos en consola qué estamos enviando exactamente antes de que salga
-    console.log("🔍 Intentando login con -> Email:", email, "| Pass:", password);
+    btn.disabled = true;
+    btn.innerText = "Accediendo...";
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
 
     if (error) {
-        // 2. Imprimimos el error crudo que nos devuelve Supabase
-        console.error("❌ Error detallado de Supabase:", error);
-        alert("Error exacto: " + error.message);
-    } else {
-        initAppWithUser(data.user);
+        showCustomDialog('Error de Acceso', "Credenciales incorrectas: " + error.message, 'error');
+        btn.disabled = false;
+        btn.innerText = "Entrar de forma segura";
+        return;
     }
 }
 
+// --- REGISTER (REGISTRO RELACIONAL) ---
 export async function handleRegister(event) {
     event.preventDefault();
+    
+    const name = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-pass').value;
-    const name = document.getElementById('reg-name').value;
-    const bloodType = document.getElementById('reg-blood').value;
-    const allergies = document.getElementById('reg-allergies').value;
+    const confirmPassword = document.getElementById('reg-pass-confirm').value;
+    const blood = document.getElementById('reg-blood').value;
+    const allergies = document.getElementById('reg-allergies').value.trim();
+    
+    const btn = event.target.querySelector('button[type="submit"]');
 
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            data: {
-                full_name: name,
-                blood_type: bloodType,
-                allergies: allergies ? allergies.split(',').map(a => a.trim()) : []
-            }
+    // 1. VALIDACIÓN: Comprobar que las contraseñas coinciden
+    if (password !== confirmPassword) {
+        showCustomDialog('Contraseñas distintas', 'Las contraseñas introducidas no coinciden. Por favor, verifícalas.', 'warning');
+        document.getElementById('reg-pass').value = '';
+        document.getElementById('reg-pass-confirm').value = '';
+        document.getElementById('reg-pass').focus();
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Creando cuenta...";
+
+    // 2. Crear el usuario en Supabase Auth
+    const { data, error: authError } = await supabase.auth.signUp({ email, password });
+
+    if (authError) {
+        showCustomDialog('Error de Registro', authError.message, 'error');
+        btn.disabled = false;
+        btn.innerText = "Registrar nueva cuenta";
+        return;
+    }
+
+    const user = data.user;
+
+    if (user) {
+      
+        const { error: profileError } = await supabase
+            .from('perfiles')
+            .insert([{
+                id: user.id, // Vinculado al UUID de autenticación
+                nombre: name,
+                dni: '--',
+                fecha_nacimiento: '',
+                grupo_sanguineo: blood,
+                peso: '--',
+                altura: '--',
+                direccion: 'No especificada',
+                alergias: allergies ? [allergies] : [],
+                seguro_compania: 'Ninguno',
+                seguro_poliza: '--',
+                seguro_tipo: '--'
+            }]);
+
+        if (profileError) {
+            showCustomDialog('Error Perfil', "Usuario creado pero hubo un problema al inicializar tus tablas de datos: " + profileError.message, 'error');
+            btn.disabled = false;
+            btn.innerText = "Registrar nueva cuenta";
+            return;
+        }
+
+        patientData.perfil = {
+            nombre: name,
+            sangre: blood,
+            dni: '',
+            altura: '',
+            peso: '',
+            direccion: '',
+            nacimiento: ''
+        };
+        patientData.alergias = allergies ? [allergies] : [];
+        patientData.contactos = [];
+        patientData.medicacion = [];
+        patientData.historial = [];
+        patientData.historial_medicacion = [];
+
+        // Forzamos el renderizado manual instantáneo de las vistas
+        renderData();
+        renderMedicationsTab('tarde');
+        renderHistorialTab();
+        // =========================================================================
+
+        showCustomDialog('¡Cuenta creada!', 'Tu expediente digital ha sido inicializado con éxito.', 'success');
+        toggleAuthTab('login');
+        event.target.reset();
+    }
+
+    btn.disabled = false;
+    btn.innerText = "Registrar nueva cuenta";
+}
+
+// --- LOGOUT (CERRAR SESIÓN) ---
+export async function logout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        showCustomDialog('Error', "No se pudo cerrar la sesión.", 'error');
+        return;
+    }
+    
+    document.getElementById('app-container').classList.add('hidden');
+    document.getElementById('auth-container').classList.remove('hidden');
+    
+    document.getElementById('form-login').reset();
+    document.getElementById('form-register').reset();
+}
+
+// --- CONTROLADOR DE SESIÓN ACTIVA ---
+export function checkSession() {
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (session && session.user) {
+            initAppWithUser(session.user);
+        } else {
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('auth-container').classList.remove('hidden');
         }
     });
+}
+
+// --- INICIALIZADOR RELACIONAL ---
+async function initAppWithUser(user) {
+    try {
+        // Añadimos la quinta consulta para traernos las tomas de medicamentos
+        const [profileRes, contactosRes, medicamentosRes, historialRes, tomasRes] = await Promise.all([
+            supabase.from('perfiles').select('*').eq('id', user.id).maybeSingle(),
+            supabase.from('contactos').select('*').eq('user_id', user.id),
+            supabase.from('medicamentos').select('*').eq('user_id', user.id),
+            supabase.from('historial').select('*').eq('user_id', user.id),
+            supabase.from('historial_tomas').select('*').eq('user_id', user.id) // <-- NUEVA
+        ]);
+
+        // 1. Mapear 'perfiles'
+        if (profileRes.data) {
+            const p = profileRes.data;
+            patientData.perfil = {
+                nombre: p.nombre || "Usuario",
+                sangre: p.grupo_sanguineo || "--",
+                dni: p.dni || "--",
+                altura: p.altura || "--",
+                peso: p.peso || "--",
+                direccion: p.direccion || "No especificada",
+                nacimiento: p.fecha_nacimiento || ""
+            };
+            patientData.alergias = p.alergias || [];
+            patientData.seguro = {
+                compania: p.seguro_compania || "Ninguno",
+                poliza: p.seguro_poliza || "--",
+                tipo: p.seguro_tipo || "--"
+            };
+        }
+
+        // 2. Mapear 'contactos'
+        patientData.contactos = (contactosRes.data || []).map(c => ({
+            id: c.id,
+            nombre: c.nombre,
+            telefono: c.telefono,
+            principal: c.es_principal,
+            relacion: c.relacion
+        }));
+
+        // 3. Mapear 'medicamentos'
+        patientData.medicacion = (medicamentosRes.data || []).map(m => ({
+            id: m.id,
+            nombre: m.nombre,
+            dosis: m.dosis,
+            frecuencia: m.frecuencia,
+            turno: m.turno,
+            color: m.color || "slate",
+            icon: m.icono || "pill"
+        }));
+
+        // 4. Mapear 'historial' (Consultas y citas)
+        patientData.historial = (historialRes.data || []).map(h => {
+            const dateObj = new Date(h.fecha_evento);
+            const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+            const fechaFormat = dateObj.toLocaleDateString('es-ES', opciones);
+            const mesAnio = `${dateObj.toLocaleString('es-ES', { month: 'long' })} ${dateObj.getFullYear()}`.toUpperCase();
+
+            return {
+                id: h.id,
+                tipo: h.tipo,
+                titulo: h.titulo,
+                lugar: h.lugar,
+                medico: h.medico || "No especificado",
+                fechaRaw: h.fecha_evento,
+                hora: h.hora_evento ? h.hora_evento.substring(0, 5) : '',
+                desc: h.descripcion || '',
+                fechaCompleta: fechaFormat,
+                mesAnio: mesAnio
+            };
+        });
+
+        // 5. Mapear el nuevo Historial de Tomas independiente
+        patientData.historial_medicacion = (tomasRes.data || []).map(t => ({
+            id: t.id,
+            nombre: t.nombre,
+            dosis: t.dosis,
+            timestamp: t.timestamp,
+            fechaFormateada: t.fecha_formateada
+        }));
+
+    } catch (err) {
+        console.error("Error estructurando datos relacionales:", err);
+    }
+
+    document.getElementById('auth-container').classList.add('hidden');
+    document.getElementById('app-container').classList.remove('hidden');
+
+    renderData();
+    renderMedicationsTab('tarde');
+    renderHistorialTab();
+}
+
+// --- ELIMINAR CUENTA ---
+export async function handleDeleteAccount() {
+    const confirm = await showCustomDialog(
+        'Dar de Baja', 
+        '¿Confirmas que deseas eliminar permanentemente tu expediente de salud digital? Esta acción destruirá todos tus registros médicos de inmediato.', 
+        'error', 
+        true
+    );
+    
+    if (!confirm) return;
+
+    const { error } = await supabase.rpc('delete_user_account');
 
     if (error) {
-        alert("Error al registrarse: " + error.message);
+        showCustomDialog('Error', "No se pudo procesar la baja: " + error.message, 'error');
     } else {
-        alert("Registro exitoso. Iniciando sesión...");
-        initAppWithUser(data.user);
+        showCustomDialog('Expediente Eliminado', 'Tu información ha sido completamente borrada de nuestros servidores.', 'success');
+        logout();
     }
 }
 
-// --- RECUPERACIÓN DE CONTRASEÑA ---
+// --- GESTIÓN DE CONTRASEÑAS ---
 export function toggleForgotPassword(show) {
     const formLogin = document.getElementById('form-login');
     const formForgot = document.getElementById('form-forgot');
-    const tabs = document.getElementById('auth-tabs');
-
     if (show) {
         formLogin.classList.add('hidden');
-        tabs.classList.add('hidden');
         formForgot.classList.remove('hidden');
     } else {
         formForgot.classList.add('hidden');
-        tabs.classList.remove('hidden');
         formLogin.classList.remove('hidden');
     }
 }
@@ -94,136 +298,28 @@ export async function handleForgotPassword(event) {
     const email = document.getElementById('forgot-email').value;
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname, 
+        redirectTo: window.location.origin + '/index.html?type=recovery',
     });
 
     if (error) {
-        alert("Error: " + error.message);
+        showCustomDialog('Error', error.message, 'error');
     } else {
-        alert("Te hemos enviado un correo electrónico con el enlace de recuperación.");
+        showCustomDialog('Correo Enviado', 'Te hemos remitido un enlace de restauración a tu e-mail.', 'success');
         toggleForgotPassword(false);
-        document.getElementById('form-forgot').reset();
     }
 }
 
 export async function handleUpdatePassword(event) {
     event.preventDefault();
-    const newPassword = document.getElementById('new-update-pass').value;
+    const newPass = document.getElementById('recovery-pass').value;
 
-    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await supabase.auth.updateUser({ password: newPass });
 
     if (error) {
-        alert("Error al actualizar: " + error.message);
+        showCustomDialog('Error', "No se pudo actualizar: " + error.message, 'error');
     } else {
-        alert("¡Contraseña actualizada con éxito!");
-        document.getElementById('form-update-pass').classList.add('hidden');
-        document.getElementById('auth-tabs').classList.remove('hidden');
-        initAppWithUser(data.user);
-    }
-}
-
-// --- GESTIÓN DE CUENTA Y SESIÓN ---
-export async function checkSession() {
-    // 1. Comprobamos si hay sesión normal
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        initAppWithUser(session.user);
-    }
-
-    // 2. Escuchamos cambios de estado (Ej: Cuando volvemos tras pinchar el enlace del email)
-    supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY') {
-            document.getElementById('form-login').classList.add('hidden');
-            document.getElementById('form-register').classList.add('hidden');
-            document.getElementById('form-forgot').classList.add('hidden');
-            document.getElementById('auth-tabs').classList.add('hidden');
-            
-            document.getElementById('form-update-pass').classList.remove('hidden');
-            
-            if (window.lucide) window.lucide.createIcons();
-        }
-    });
-}
-
-export async function logout() {
-    try {
-        await supabase.auth.signOut();
-    } catch (err) {
-        console.error("Error al cerrar sesión en Supabase:", err);
-    } finally {
+        showCustomDialog('Clave Actualizada', 'Tu nueva contraseña ya se encuentra activa.', 'success');
+        document.getElementById('recovery-container').classList.add('hidden');
         document.getElementById('auth-container').classList.remove('hidden');
-        document.getElementById('app-container').classList.add('hidden');
-        
-        document.getElementById('form-login').reset();
-        document.getElementById('form-register').reset();
     }
 }
-
-export async function handleDeleteAccount() {
-    // Leemos lo que el usuario ha escrito en la caja de texto
-    const confirmInput = document.getElementById('delete-confirm-input').value;
-    
-    // Validamos estrictamente
-    if (confirmInput !== 'ELIMINAR') {
-        alert("Debes escribir la palabra 'ELIMINAR' exactamente y en mayúsculas para poder borrar tu cuenta.");
-        return;
-    }
-
-    try {
-        // --- AQUÍ VA LA LLAMADA A SUPABASE PARA BORRAR ---
-         const { error } = await supabase.rpc('delete_user_account');
-         if (error) throw error;
-        
-        
-        // Restauramos la vista de ajustes para la próxima vez
-        document.getElementById('delete-confirm-container').classList.add('hidden');
-        document.getElementById('init-delete-btn').classList.remove('hidden');
-        document.getElementById('delete-confirm-input').value = '';
-
-        // Cerramos la sesión en la app
-        logout();
-
-    } catch (err) {
-        console.error("Error crítico al eliminar la cuenta:", err);
-        alert("No se pudo eliminar la cuenta: " + err.message);
-    }
-}
-
-// --- INICIALIZADOR DE APP ---
-function initAppWithUser(user) {
-    if (user && user.user_metadata) {
-        const meta = user.user_metadata;
-        
-        // Mapeamos los datos de la nube al objeto dinámico de la app
-        patientData.perfil.nombre = meta.full_name || "Usuario";
-        patientData.perfil.sangre = meta.blood_type || "--";
-        patientData.perfil.dni = meta.dni || "--";
-        patientData.perfil.altura = meta.altura || "--";
-        patientData.perfil.peso = meta.peso || "--";
-        patientData.perfil.direccion = meta.direccion || "No especificada";
-        
-        if (meta.allergies) patientData.alergias = meta.allergies;
-        
-        patientData.seguro = {
-            compania: meta.seguro_compania || "Ninguno",
-            poliza: meta.seguro_poliza || "--",
-            tipo: meta.seguro_tipo || "--"
-        };
-        
-        patientData.contactos = meta.contactos || [];
-        patientData.medicacion = meta.medicacion || [];
-        patientData.historial = meta.historial || [];
-    }
-
-    // Ocultar formulario de acceso y desbloquear la SPA
-    document.getElementById('auth-container').classList.add('hidden');
-    document.getElementById('app-container').classList.remove('hidden');
-
-    // Forzar redibujado de todas las pestañas con información real
-    renderData();
-    renderMedicationsTab('tarde');
-    renderHistorialTab();
-    if (window.lucide) window.lucide.createIcons();
-}
-
-

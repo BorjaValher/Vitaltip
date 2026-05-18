@@ -9,41 +9,81 @@ export function renderData() {
     `).join('');
     document.getElementById('sangre-text').innerText = patientData.perfil.sangre;
 
-    // Contactos
-    document.getElementById('contactos-container').innerHTML = patientData.contactos.map(c => `
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="${c.principal ? 'bg-blue-50 text-[#00529b]' : 'bg-slate-50 text-slate-400'} p-3 rounded-xl">
-                    <i data-lucide="${c.principal ? 'shield-check' : 'user'}" class="w-5 h-5"></i>
+    // Contactos (CON EMPTY STATE)
+    if (patientData.contactos && patientData.contactos.length > 0) {
+        document.getElementById('contactos-container').innerHTML = patientData.contactos.map(c => `
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="${c.principal ? 'bg-blue-50 text-[#00529b]' : 'bg-slate-50 text-slate-400'} p-3 rounded-xl">
+                        <i data-lucide="${c.principal ? 'shield-check' : 'user'}" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-800">${c.nombre}</p>
+                        <p class="text-xs text-slate-500">${c.relacion}</p>
+                    </div>
+                </div>
+                <a href="tel:${c.telefono}" class="bg-green-500 p-3 rounded-xl text-white shadow-lg active:scale-90 transition-transform">
+                    <i data-lucide="phone" class="w-5 h-5"></i>
+                </a>
+            </div>
+        `).join('');
+    } else {
+        document.getElementById('contactos-container').innerHTML = `
+            <div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-5 text-center shadow-sm">
+                <i data-lucide="users" class="w-6 h-6 text-slate-400 mx-auto mb-2"></i>
+                <p class="text-sm font-bold text-slate-600">Sin contactos de emergencia</p>
+                <p class="text-xs text-slate-500 mt-1">Añádelos editando tu <span class="font-bold text-[#00529b]">Perfil</span>.</p>
+            </div>
+        `;
+    }
+
+    // Medicación (CON EMPTY STATE)
+    if (patientData.medicacion && patientData.medicacion.length > 0) {
+        document.getElementById('medicacion-container').innerHTML = patientData.medicacion.map(m => `
+            <div class="flex gap-4 p-3 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                <div class="bg-white p-2 rounded-lg shadow-sm h-fit">
+                    <i data-lucide="${m.icon}" class="text-blue-500 w-4 h-4"></i>
                 </div>
                 <div>
-                    <p class="font-bold text-slate-800">${c.nombre}</p>
-                    <p class="text-xs text-slate-500">${c.relacion}</p>
+                    <p class="font-bold text-sm text-slate-800">${m.nombre}</p>
+                    <p class="text-xs text-slate-500">${m.dosis} • <span class="text-blue-600 font-semibold uppercase">${m.frecuencia}</span></p>
                 </div>
             </div>
-            <a href="tel:${c.telefono}" class="bg-green-500 p-3 rounded-xl text-white shadow-lg active:scale-90 transition-transform">
-                <i data-lucide="phone" class="w-5 h-5"></i>
-            </a>
-        </div>
-    `).join('');
-
-    // Medicación
-    document.getElementById('medicacion-container').innerHTML = patientData.medicacion.map(m => `
-        <div class="flex gap-4 p-3 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-            <div class="bg-white p-2 rounded-lg shadow-sm h-fit">
-                <i data-lucide="${m.icon}" class="text-blue-500 w-4 h-4"></i>
+        `).join('');
+    } else {
+        document.getElementById('medicacion-container').innerHTML = `
+            <div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-5 text-center shadow-sm">
+                <i data-lucide="pill" class="w-6 h-6 text-slate-400 mx-auto mb-2"></i>
+                <p class="text-sm font-bold text-slate-600">Sin medicación activa</p>
+                <p class="text-xs text-slate-500 mt-1">Regístrala en la pestaña de <span class="font-bold text-[#00529b]">Medicinas</span>.</p>
             </div>
-            <div>
-                <p class="font-bold text-sm text-slate-800">${m.nombre}</p>
-                <p class="text-xs text-slate-500">${m.dosis} • <span class="text-blue-600 font-semibold uppercase">${m.frecuencia}</span></p>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }
 
     // Seguro e Historial
-    document.getElementById('seguro-compania').innerText = patientData.seguro.compania;
-    document.getElementById('seguro-poliza').innerText = patientData.seguro.poliza;
-    document.getElementById('seguro-tipo').innerText = patientData.seguro.tipo;
+    // Seguro Médico (CON EMPTY STATE)
+    const tieneSeguro = patientData.seguro && patientData.seguro.compania && patientData.seguro.compania !== "" && patientData.seguro.compania !== "Ninguno";
+
+    if (tieneSeguro) {
+        document.getElementById('seguro-container').innerHTML = `
+            <p class="text-lg font-bold">${patientData.seguro.compania}</p>
+            <div class="flex justify-between items-end">
+                <div>
+                    <p class="text-[10px] uppercase text-slate-400 font-bold">Póliza</p>
+                    <p class="font-mono text-xs">${patientData.seguro.poliza || '--'}</p>
+                </div>
+                <span class="text-xs font-bold text-blue-400 uppercase">${patientData.seguro.tipo || '--'}</span>
+            </div>
+        `;
+    } else {
+        document.getElementById('seguro-container').innerHTML = `
+            <div class="text-center py-2">
+                <i data-lucide="shield-off" class="w-6 h-6 text-slate-500 mx-auto mb-2"></i>
+                <p class="text-sm font-bold text-slate-300">Sin seguro registrado</p>
+                <p class="text-xs text-slate-500 mt-1">Añádelo editando tu <span class="font-bold text-blue-400">Perfil</span>.</p>
+            </div>
+        `;
+    }
 
     document.getElementById('historial-container').innerHTML = patientData.historial.map(h => `
         <div class="relative pl-6">
@@ -80,7 +120,11 @@ export function renderData() {
             <p class="text-sm font-black text-slate-800">${s.val}</p>
         </div>
     `).join('');
-    renderHistorialTab()
+    
+    renderHistorialTab();
+    
+    // Renderizamos los iconos de los nuevos mensajes si acaban de aparecer
+    if (window.lucide) window.lucide.createIcons();
 }
 
 export function showDataModal(data) {
@@ -258,7 +302,7 @@ export function renderHistoryDetail(id) {
         </div>
 
         <div class="space-y-3 mt-8">
-            <button class="w-full bg-[#00529b] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all">
+            <button onclick="editHistoryEvent(${registro.id})" class="w-full bg-[#00529b] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all">
                 <i data-lucide="edit" class="w-5 h-5"></i> Editar Registro
             </button>
             <button onclick="deleteHistoryEvent(${registro.id})" class="w-full bg-white text-red-500 border border-red-100 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
@@ -269,5 +313,35 @@ export function renderHistoryDetail(id) {
 
     // Abrir la vista de detalle
     toggleHistoryView('detail');
+    if (window.lucide) window.lucide.createIcons();
+}
+
+export function renderSettingsLists() {
+    // 1. Dibujar Alergias
+    const contAlergias = document.getElementById('list-settings-alergias');
+    if (contAlergias) {
+        contAlergias.innerHTML = (patientData.alergias || []).map((a, index) => `
+            <span class="bg-red-50 text-[#d32f2f] border border-red-100 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm">
+                ${a}
+                <button type="button" onclick="deleteAlergia(${index})" class="text-red-400 hover:text-red-700 ml-1"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </span>
+        `).join('');
+    }
+
+    // 2. Dibujar Contactos
+    const contContactos = document.getElementById('list-settings-contactos');
+    if (contContactos) {
+        contContactos.innerHTML = (patientData.contactos || []).map((c, index) => `
+            <div class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm">
+                <div>
+                    <p class="font-bold text-sm text-slate-800">${c.nombre} ${c.principal ? '<span class="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded ml-1">PRINCIPAL</span>' : ''}</p>
+                    <p class="text-xs text-slate-500 font-mono">${c.telefono}</p>
+                </div>
+                <button type="button" onclick="deleteContacto(${index})" class="bg-red-50 p-2 rounded-lg text-red-500 active:scale-90 transition-transform">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `).join('');
+    }
     if (window.lucide) window.lucide.createIcons();
 }

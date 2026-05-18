@@ -1,13 +1,15 @@
+// src/js/ui/dataHandlers.js
+
+import { supabase } from '../config/supabaseClient.js';
 import { patientData } from '../config/mockData.js';
 import { renderData, renderMedicationsTab, renderHistorialTab } from './render.js';
 import { toggleEditProfile, toggleMedicationForm, toggleHistoryView } from './navigation.js';
-import { supabase } from '../config/supabaseClient.js';
 
-
+// --- PERFIL ---
+// --- PERFIL BÁSICO ---
 export async function saveProfile(event) {
     event.preventDefault();
 
-    // 1. Capturar todos los campos del cuestionario
     const nombre = document.getElementById('edit-nombre').value;
     const dni = document.getElementById('edit-dni').value;
     const altura = document.getElementById('edit-altura').value;
@@ -15,59 +17,95 @@ export async function saveProfile(event) {
     const direccion = document.getElementById('edit-direccion').value;
     const sangre = document.getElementById('edit-sangre').value;
 
-    const seguro_compania = document.getElementById('edit-seguro-compania').value;
-    const seguro_poliza = document.getElementById('edit-seguro-poliza').value;
-    const seguro_tipo = document.getElementById('edit-seguro-tipo').value;
-
-    const contactos = [];
-    const c1Nombre = document.getElementById('edit-contacto1-nombre').value;
-    const c1Tel = document.getElementById('edit-contacto1-tel').value;
-    if (c1Nombre || c1Tel) {
-        contactos.push({ nombre: c1Nombre, telefono: c1Tel, relacion: "Principal" });
-    }
-
-    const c2Nombre = document.getElementById('edit-contacto2-nombre').value;
-    const c2Tel = document.getElementById('edit-contacto2-tel').value;
-    if (c2Nombre || c2Tel) {
-        contactos.push({ nombre: c2Nombre, telefono: c2Tel, relacion: "Secundario" });
-    }
-
-    // 2. GUARDAR EN LA NUBE (Supabase Auth Metadata)
-    const { data, error } = await supabase.auth.updateUser({
-        data: {
-            full_name: nombre,
-            dni: dni,
-            altura: altura,
-            peso: peso,
-            direccion: direccion,
-            blood_type: sangre,
-            seguro_compania: seguro_compania,
-            seguro_poliza: seguro_poliza,
-            seguro_tipo: seguro_tipo,
-            contactos: contactos
-        }
+    const { error } = await supabase.auth.updateUser({
+        data: { full_name: nombre, dni: dni, altura: altura, peso: peso, direccion: direccion, blood_type: sangre }
     });
 
-    if (error) {
-        alert("Error al sincronizar con Supabase: " + error.message);
-        return;
-    }
+    if (error) { alert("Error: " + error.message); return; }
 
-    // 3. Si la nube responde OK, actualizamos nuestro objeto global local
-    patientData.perfil = { nombre, dni, altura, peso, direccion, sangre };
-    patientData.seguro = { compania: seguro_compania, poliza: seguro_poliza, tipo: seguro_tipo };
-    patientData.contactos = contactos;
-
-    // 4. Refrescar los componentes visuales e iconos
+    patientData.perfil = { ...patientData.perfil, nombre, dni, altura, peso, direccion, sangre };
     renderData();
-    if (window.lucide) window.lucide.createIcons();
-    
     toggleEditProfile(false);
-    alert('Perfil guardado con éxito y sincronizado en la nube.');
+}
+
+// --- SEGURO MÉDICO ---
+export async function saveSeguro(event) {
+    event.preventDefault();
+    const compania = document.getElementById('set-seguro-compania').value;
+    const poliza = document.getElementById('set-seguro-poliza').value;
+    const tipo = document.getElementById('set-seguro-tipo').value;
+
+    const { error } = await supabase.auth.updateUser({
+        data: { seguro_compania: compania, seguro_poliza: poliza, seguro_tipo: tipo }
+    });
+    if (error) { alert("Error: " + error.message); return; }
+
+    patientData.seguro = { compania, poliza, tipo };
+    renderData();
+    closeSubSetting();
+}
+
+// --- CONTACTOS ---
+export async function addContacto(event) {
+    event.preventDefault();
+    const nombre = document.getElementById('new-cont-nombre').value;
+    const telefono = document.getElementById('new-cont-tel').value;
+    const principal = document.getElementById('new-cont-principal').checked;
+
+    if (!patientData.contactos) patientData.contactos = [];
+    
+    // Si marcamos este como principal, quitamos el principal a los demás
+    if (principal) {
+        patientData.contactos.forEach(c => c.principal = false);
+    }
+    
+    patientData.contactos.push({ nombre, telefono, principal, relacion: principal ? "Principal" : "Secundario" });
+
+    const { error } = await supabase.auth.updateUser({ data: { contactos: patientData.contactos } });
+    if (error) { alert("Error: " + error.message); return; }
+
+    event.target.reset();
+    renderData();
+    import('./render.js').then(m => m.renderSettingsLists()); // Refresca la sublista
+}
+
+export async function deleteContacto(index) {
+    patientData.contactos.splice(index, 1);
+    const { error } = await supabase.auth.updateUser({ data: { contactos: patientData.contactos } });
+    if (error) { alert("Error: " + error.message); return; }
+    
+    renderData();
+    import('./render.js').then(m => m.renderSettingsLists());
+}
+
+// --- ALERGIAS ---
+export async function addAlergia(event) {
+    event.preventDefault();
+    const nuevaAlergia = document.getElementById('new-alergia-input').value.trim();
+    if (!nuevaAlergia) return;
+
+    if (!patientData.alergias) patientData.alergias = [];
+    patientData.alergias.push(nuevaAlergia);
+
+    const { error } = await supabase.auth.updateUser({ data: { allergies: patientData.alergias } });
+    if (error) { alert("Error: " + error.message); return; }
+
+    event.target.reset();
+    renderData();
+    import('./render.js').then(m => m.renderSettingsLists());
+}
+
+export async function deleteAlergia(index) {
+    patientData.alergias.splice(index, 1);
+    const { error } = await supabase.auth.updateUser({ data: { allergies: patientData.alergias } });
+    if (error) { alert("Error: " + error.message); return; }
+    
+    renderData();
+    import('./render.js').then(m => m.renderSettingsLists());
 }
 
 // --- MEDICACIÓN ---
-export function saveMedication(event) {
+export async function saveMedication(event) {
     event.preventDefault();
 
     const nombre = document.getElementById('new-med-name').value;
@@ -76,6 +114,7 @@ export function saveMedication(event) {
     const turno = document.getElementById('new-med-turno').value;
 
     const newMed = {
+        id: Date.now(), 
         nombre: nombre,
         dosis: dosis,
         frecuencia: frecuencia,
@@ -87,62 +126,128 @@ export function saveMedication(event) {
 
     patientData.medicacion.push(newMed);
 
+    const { error } = await supabase.auth.updateUser({
+        data: { medicacion: patientData.medicacion }
+    });
+
+    if (error) {
+        alert("Error al guardar medicamento en la nube: " + error.message);
+        return;
+    }
+
     renderMedicationsTab(turno);
     if (window.lucide) window.lucide.createIcons();
     
     toggleMedicationForm(false);
     event.target.reset();
     
-    alert('Medicamento añadido con éxito');
+    
 }
 
-
-
 // --- HISTORIAL MÉDICO ---
-export function saveHistoryEvent(event) {
+export async function saveHistoryEvent(event) {
     event.preventDefault();
 
+    const idEdit = document.getElementById('hist-id').value; // Si tiene algo, estamos editando
+    
     const tipo = document.getElementById('hist-tipo').value;
     const titulo = document.getElementById('hist-titulo').value;
     const lugar = document.getElementById('hist-lugar').value;
+    const medico = document.getElementById('hist-medico').value || "No especificado";
     const fecha = document.getElementById('hist-fecha').value;
     const hora = document.getElementById('hist-hora').value;
     const desc = document.getElementById('hist-desc').value;
 
-    // Formatear la fecha para el diseño
     const dateObj = new Date(fecha);
     const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
     const fechaFormat = dateObj.toLocaleDateString('es-ES', opciones);
     const mesAnio = `${dateObj.toLocaleString('es-ES', { month: 'long' })} ${dateObj.getFullYear()}`.toUpperCase();
 
-    const nuevoRegistro = {
-        id: Date.now(), // ID único temporal
-        mesAnio: mesAnio,
-        fechaCompleta: fechaFormat,
-        hora: hora,
-        tipo: tipo,
-        titulo: titulo,
-        lugar: lugar,
-        desc: desc,
-        especialidad: "General", 
-        medico: "No especificado"
-    };
+    if (idEdit) {
+        // MODO EDICIÓN: Buscamos su posición y lo actualizamos
+        const index = patientData.historial.findIndex(h => h.id == idEdit);
+        if (index !== -1) {
+            patientData.historial[index] = {
+                ...patientData.historial[index],
+                tipo, titulo, lugar, medico, desc, hora,
+                fechaRaw: fecha, // Guardamos la fecha cruda para que el formulario la entienda al editar
+                fechaCompleta: fechaFormat,
+                mesAnio: mesAnio
+            };
+        }
+    } else {
+        // MODO CREACIÓN: Creamos uno nuevo
+        const nuevoRegistro = {
+            id: Date.now(),
+            mesAnio: mesAnio,
+            fechaRaw: fecha, // Guardamos la fecha cruda
+            fechaCompleta: fechaFormat,
+            hora: hora,
+            tipo: tipo,
+            titulo: titulo,
+            lugar: lugar,
+            medico: medico,
+            desc: desc,
+            especialidad: "General" 
+        };
+        patientData.historial.unshift(nuevoRegistro);
+    }
 
-    // Insertar al principio para que salga el más reciente primero
-    patientData.historial.unshift(nuevoRegistro);
+    // Sincronizamos con Supabase
+    const { error } = await supabase.auth.updateUser({
+        data: { historial: patientData.historial }
+    });
+
+    if (error) {
+        alert("Error al guardar en el historial en la nube: " + error.message);
+        return;
+    }
 
     renderHistorialTab();
     toggleHistoryView('list');
-    event.target.reset(); // Limpiar el formulario
+    
+    // Limpiamos la basura por seguridad
+    event.target.reset();
+    document.getElementById('hist-id').value = "";
+    
+    alert(idEdit ? 'Registro actualizado con éxito.' : 'Registro añadido al historial de forma segura.');
 }
 
-export function deleteHistoryEvent(id) {
+export async function deleteHistoryEvent(id) {
     if (confirm("¿Estás seguro de que deseas eliminar este registro permanentemente?")) {
-        // Filtrar el array para quitar el elemento con ese ID
         patientData.historial = patientData.historial.filter(h => h.id !== id);
         
+        const { error } = await supabase.auth.updateUser({
+            data: { historial: patientData.historial }
+        });
+
+        if (error) {
+            alert("Error al eliminar en la nube: " + error.message);
+            return;
+        }
+        
         renderHistorialTab();
-        toggleHistoryView('list'); // Volver a la lista tras borrar
+        toggleHistoryView('list'); 
         alert("Registro eliminado correctamente.");
     }
+}
+
+export function editHistoryEvent(id) {
+    // 1. Buscamos el registro en los datos locales
+    const record = patientData.historial.find(h => h.id === id);
+    if (!record) return;
+
+    // 2. Rellenamos el formulario con sus datos
+    document.getElementById('hist-id').value = record.id; // ¡Clave para saber que estamos editando!
+    document.getElementById('hist-tipo').value = record.tipo;
+    document.getElementById('hist-titulo').value = record.titulo;
+    document.getElementById('hist-lugar').value = record.lugar;
+    document.getElementById('hist-medico').value = record.medico && record.medico !== "No especificado" ? record.medico : '';
+    document.getElementById('hist-fecha').value = record.fechaRaw || ''; 
+    document.getElementById('hist-hora').value = record.hora || '';
+    document.getElementById('hist-desc').value = record.desc || '';
+
+    // 3. Cambiamos el título y abrimos la vista
+    document.getElementById('form-hist-title').innerText = "Editar Registro";
+    toggleHistoryView('form');
 }

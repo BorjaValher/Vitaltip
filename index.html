@@ -217,7 +217,8 @@
                     <i data-lucide="shield" class="w-40 h-40"></i>
                 </div>
                 <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Seguro Médico</h3>
-                <div class="space-y-3 relative z-10">
+                
+                <div id="seguro-container" class="space-y-3 relative z-10">
                     <p id="seguro-compania" class="text-lg font-bold">--</p>
                     <div class="flex justify-between items-end">
                         <div>
@@ -253,10 +254,14 @@
                     <h2 class="text-xl font-black text-slate-800">VitalTip</h2>
                 </div>
                 <div>
-                    <h3 class="text-2xl font-black text-slate-800">Agregar Registro</h3>
-                    <p class="text-sm text-slate-500 mt-1">Añade un nuevo evento a tu historial médico.</p>
+                    <h3 id="form-hist-title" class="text-2xl font-black text-slate-800">Agregar Registro</h3>
+                    <p class="text-sm text-slate-500 mt-1">Mantén tu historial médico siempre al día.</p>
                 </div>
-                <form onsubmit="saveHistoryEvent(event)" class="space-y-4 bg-white p-5 rounded-3xl shadow-sm border border-slate-200">
+
+                <form id="form-historial" onsubmit="saveHistoryEvent(event)" class="space-y-4 bg-white p-5 rounded-3xl shadow-sm border border-slate-200">
+                    
+                    <input type="hidden" id="hist-id" value="">
+
                     <div>
                         <label class="text-xs font-bold text-slate-800">Tipo de Evento</label>
                         <select id="hist-tipo" required class="w-full border border-slate-200 rounded-xl p-3 mt-1 text-sm text-slate-600 outline-none focus:border-[#00529b] bg-slate-50">
@@ -278,6 +283,15 @@
                             <input id="hist-lugar" type="text" required placeholder="Nombre del hospital o clínica" class="w-full border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 focus:border-[#00529b] outline-none bg-slate-50">
                         </div>
                     </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-800">Médico Responsable</label>
+                        <div class="relative mt-1">
+                            <i data-lucide="user-check" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                            <input id="hist-medico" type="text" placeholder="Ej. Dra. García (Opcional)" class="w-full border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 focus:border-[#00529b] outline-none bg-slate-50">
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-xs font-bold text-slate-800">Fecha</label>
@@ -293,7 +307,7 @@
                         <textarea id="hist-desc" rows="4" placeholder="Escribe los detalles importantes aquí..." class="w-full border border-slate-200 rounded-xl py-3 px-3 mt-1 text-sm text-slate-800 focus:border-[#00529b] outline-none bg-slate-50"></textarea>
                     </div>
                     <button type="submit" class="w-full mt-2 bg-[#00529b] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
-                        <i data-lucide="save" class="w-5 h-5"></i> Guardar en Historial
+                        <i data-lucide="save" class="w-5 h-5"></i> Guardar Registro
                     </button>
                 </form>
             </div>
@@ -310,9 +324,13 @@
         </main>
 
         <main id="profile" class="tab-content hidden p-4 pt-6 pb-28">
-            <section id="profile-section" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <section id="profile-section" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                 
-                <div id="profile-view-mode">
+                <div id="profile-view-mode" class="relative">
+                    <button onclick="toggleSettings(true)" class="absolute -top-2 -right-2 p-2 text-slate-400 hover:text-slate-600 active:scale-90 transition-all z-10">
+                        <i data-lucide="settings" class="w-6 h-6"></i>
+                    </button>
+
                     <div id="profile-info">
                         <div class="text-center mb-6">
                             <div class="w-24 h-24 bg-slate-100 rounded-full mx-auto mb-4 flex items-center justify-center text-slate-400 border-4 border-white shadow-lg">
@@ -331,7 +349,7 @@
                         </div>
                     </div>
             
-                    <button id="edit-profile-btn" onclick="toggleEditProfile(true)" class="w-full mt-4 bg-blue-600 text-white py-3 rounded-2xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
+                    <button onclick="toggleEditProfile(true)" class="w-full mt-4 bg-blue-600 text-white py-3 rounded-2xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
                         <i data-lucide="edit" class="w-5 h-5"></i> Editar Perfil
                     </button>
             
@@ -340,98 +358,156 @@
                             <i data-lucide="log-out" class="w-5 h-5 text-slate-500"></i>
                             Cerrar Sesión
                         </button>
-                        <button onclick="handleDeleteAccount()" class="w-full bg-red-50 text-[#d32f2f] border border-red-100 py-3 rounded-2xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-sm hover:bg-red-100 active:scale-95 transition-all">
-                            <i data-lucide="user-x" class="w-5 h-5"></i>
-                            Eliminar Cuenta
-                        </button>
                     </div>
                 </div>
                 
                 <div id="edit-profile-form" class="hidden">
                     <h3 class="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
-                        <i data-lucide="settings" class="w-5 h-5"></i> Ajustes de Perfil
+                        <i data-lucide="edit-3" class="w-5 h-5"></i> Editar Datos
                     </h3>
                     <form onsubmit="saveProfile(event)" class="space-y-4">
-                        
-                        <p class="text-[10px] font-bold text-[#00529b] border-b border-slate-100 pb-1 uppercase mt-2">Datos Físicos e Identidad</p>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nombre Completo</label>
-                            <input id="edit-nombre" type="text" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
+                            <input id="edit-nombre" type="text" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DNI / Pasaporte</label>
-                            <input id="edit-dni" type="text" placeholder="Ej. 12345678A" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
+                            <input id="edit-dni" type="text" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Altura (cm)</label>
-                                <input id="edit-altura" type="number" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
+                                <input id="edit-altura" type="number" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Peso (kg)</label>
-                                <input id="edit-peso" type="number" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
+                                <input id="edit-peso" type="number" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
                             </div>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dirección</label>
-                            <input id="edit-direccion" type="text" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
+                            <input id="edit-direccion" type="text" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tipo de Sangre</label>
-                            <select id="edit-sangre" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
-                                <option value="O+">O Positivo (O+)</option>
-                                <option value="O-">O Negativo (O-)</option>
-                                <option value="A+">A Positivo (A+)</option>
-                                <option value="A-">A Negativo (A-)</option>
-                                <option value="B+">B Positivo (B+)</option>
-                                <option value="B-">B Negativo (B-)</option>
-                                <option value="AB+">AB Positivo (AB+)</option>
-                                <option value="AB-">AB Negativo (AB-)</option>
+                            <select id="edit-sangre" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
+                                <option value="O+">O Positivo (O+)</option><option value="O-">O Negativo (O-)</option>
+                                <option value="A+">A Positivo (A+)</option><option value="A-">A Negativo (A-)</option>
+                                <option value="B+">B Positivo (B+)</option><option value="B-">B Negativo (B-)</option>
+                                <option value="AB+">AB Positivo (AB+)</option><option value="AB-">AB Negativo (AB-)</option>
                             </select>
                         </div>
-
-                        <p class="text-[10px] font-bold text-[#00529b] border-b border-slate-100 pb-1 mt-6 uppercase">Seguro Médico</p>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compañía Aseguradora</label>
-                            <input id="edit-seguro-compania" type="text" placeholder="Ej. Sanitas, Adeslas..." class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nº Póliza</label>
-                                <input id="edit-seguro-poliza" type="text" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tipo</label>
-                                <input id="edit-seguro-tipo" type="text" placeholder="Ej. Completo" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 mt-1 text-sm bg-slate-50 focus:border-[#00529b] outline-none transition-colors">
-                            </div>
-                        </div>
-
-                        <p class="text-[10px] font-bold text-[#d32f2f] border-b border-slate-100 pb-1 mt-6 uppercase flex items-center gap-1">
-                            <i data-lucide="phone" class="w-3 h-3"></i> Contactos de Emergencia
-                        </p>
-                        <div class="bg-red-50 p-3 rounded-2xl border border-red-100 space-y-3">
-                            <p class="text-[10px] font-bold text-[#d32f2f] uppercase">Contacto Principal</p>
-                            <input id="edit-contacto1-nombre" type="text" placeholder="Nombre (Ej. María - Madre)" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 text-sm bg-white focus:border-[#d32f2f] outline-none transition-colors">
-                            <input id="edit-contacto1-tel" type="tel" placeholder="Teléfono" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 text-sm bg-white focus:border-[#d32f2f] outline-none transition-colors">
-                        </div>
-                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-3">
-                            <p class="text-[10px] font-bold text-slate-500 uppercase">Contacto Secundario (Opcional)</p>
-                            <input id="edit-contacto2-nombre" type="text" placeholder="Nombre" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 text-sm bg-white focus:border-[#00529b] outline-none transition-colors">
-                            <input id="edit-contacto2-tel" type="tel" placeholder="Teléfono" class="w-full border border-slate-200 rounded-xl py-2.5 px-3 text-sm bg-white focus:border-[#00529b] outline-none transition-colors">
-                        </div>
-
-                        <button type="submit" class="w-full bg-[#11caa0] text-white py-4 rounded-2xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all mt-6">
+                        <button type="submit" class="w-full bg-[#11caa0] text-white py-4 rounded-2xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 mt-6">
                             <i data-lucide="check" class="w-5 h-5"></i> Guardar Cambios
                         </button>
-                        <button type="button" onclick="toggleEditProfile(false)" class="w-full mt-2 bg-transparent text-slate-500 py-3 rounded-2xl font-bold uppercase text-sm tracking-widest active:text-slate-800 transition-colors">
+                        <button type="button" onclick="toggleEditProfile(false)" class="w-full mt-2 bg-transparent text-slate-500 py-3 rounded-2xl font-bold uppercase text-sm tracking-widest active:text-slate-800">
                             Cancelar
                         </button>
+                    </form>
+                </div>
+
+                <div id="settings-main-view" class="hidden">
+                    <div class="flex items-center gap-4 mb-6">
+                        <button onclick="toggleSettings(false)" class="p-2 text-slate-600 active:scale-90 transition-transform">
+                            <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                        </button>
+                        <h3 class="text-lg font-black text-slate-800">Ajustes de Cuenta</h3>
+                    </div>
+                    
+                    <div class="space-y-3 mb-8">
+                        <button onclick="openSubSetting('seguro')" class="w-full bg-slate-50 p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center active:scale-95 transition-all">
+                            <div class="flex items-center gap-3"><i data-lucide="shield" class="text-[#00529b]"></i><span class="font-bold text-slate-700">Seguro Médico</span></div>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
+                        </button>
+                        <button onclick="openSubSetting('contactos')" class="w-full bg-slate-50 p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center active:scale-95 transition-all">
+                            <div class="flex items-center gap-3"><i data-lucide="users" class="text-[#00529b]"></i><span class="font-bold text-slate-700">Contactos de Emergencia</span></div>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
+                        </button>
+                        <button onclick="openSubSetting('alergias')" class="w-full bg-slate-50 p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center active:scale-95 transition-all">
+                            <div class="flex items-center gap-3"><i data-lucide="ban" class="text-[#d32f2f]"></i><span class="font-bold text-slate-700">Alergias Críticas</span></div>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-5 bg-red-50 rounded-2xl border border-red-100">
+                        <h4 class="font-bold text-[#d32f2f] mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i> Zona de Peligro</h4>
+                        <div id="delete-confirm-container" class="hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                            <label class="text-[10px] font-bold text-[#d32f2f] uppercase tracking-widest block mb-1">Escribe ELIMINAR para confirmar</label>
+                            <input id="delete-confirm-input" type="text" placeholder="ELIMINAR" class="w-full border border-red-300 rounded-xl py-2.5 px-3 text-sm font-black text-center text-red-700 outline-none mb-3">
+                            <div class="flex gap-2">
+                                <button onclick="cancelDelete()" class="flex-1 bg-white text-slate-500 border border-slate-200 py-3 rounded-xl font-bold uppercase text-[10px]">Cancelar</button>
+                                <button onclick="handleDeleteAccount()" class="flex-1 bg-[#d32f2f] text-white py-3 rounded-xl font-bold uppercase text-[10px] shadow-md">Borrar Datos</button>
+                            </div>
+                        </div>
+                        <button id="init-delete-btn" onclick="showDeleteConfirmation()" class="w-full bg-white text-[#d32f2f] border border-red-200 py-3 rounded-xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="user-x" class="w-5 h-5"></i> Eliminar Definitivamente
+                        </button>
+                    </div>
+                </div>
+
+                <div id="settings-seguro-view" class="hidden settings-sub-view">
+                    <div class="flex items-center gap-4 mb-6">
+                        <button onclick="closeSubSetting()" class="p-2 text-slate-600 active:scale-90 transition-transform">
+                            <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                        </button>
+                        <h3 class="text-lg font-black text-slate-800">Seguro Médico</h3>
+                    </div>
+                    <form onsubmit="saveSeguro(event)" class="space-y-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compañía Aseguradora</label>
+                            <input id="set-seguro-compania" type="text" placeholder="Ej. Sanitas..." class="w-full border border-slate-200 rounded-xl py-3 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nº Póliza</label>
+                            <input id="set-seguro-poliza" type="text" class="w-full border border-slate-200 rounded-xl py-3 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tipo de póliza</label>
+                            <input id="set-seguro-tipo" type="text" placeholder="Ej. Completo" class="w-full border border-slate-200 rounded-xl py-3 px-3 mt-1 text-sm bg-slate-50 outline-none focus:border-[#00529b]">
+                        </div>
+                        <button type="submit" class="w-full bg-[#00529b] text-white py-4 rounded-2xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg mt-6">
+                            <i data-lucide="save" class="w-5 h-5"></i> Guardar Seguro
+                        </button>
+                    </form>
+                </div>
+
+                <div id="settings-contactos-view" class="hidden settings-sub-view">
+                    <div class="flex items-center gap-4 mb-6">
+                        <button onclick="closeSubSetting()" class="p-2 text-slate-600 active:scale-90 transition-transform">
+                            <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                        </button>
+                        <h3 class="text-lg font-black text-slate-800">Contactos</h3>
+                    </div>
+                    <div id="list-settings-contactos" class="space-y-3 mb-6"></div>
+                    <form onsubmit="addContacto(event)" class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50 space-y-3">
+                        <p class="text-[10px] font-bold text-[#00529b] uppercase">Añadir Nuevo</p>
+                        <input id="new-cont-nombre" type="text" required placeholder="Nombre (Ej. Mamá)" class="w-full border border-slate-200 rounded-xl py-2 px-3 text-sm outline-none focus:border-[#00529b]">
+                        <input id="new-cont-tel" type="tel" required placeholder="Teléfono" class="w-full border border-slate-200 rounded-xl py-2 px-3 text-sm outline-none focus:border-[#00529b]">
+                        <div class="flex items-center gap-2 pt-1">
+                            <input type="checkbox" id="new-cont-principal" class="w-4 h-4 rounded text-[#00529b]">
+                            <label for="new-cont-principal" class="text-xs text-slate-600 font-bold">Es contacto principal (SOS)</label>
+                        </div>
+                        <button type="submit" class="w-full bg-[#11caa0] text-white py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-md">Añadir</button>
+                    </form>
+                </div>
+
+                <div id="settings-alergias-view" class="hidden settings-sub-view">
+                    <div class="flex items-center gap-4 mb-6">
+                        <button onclick="closeSubSetting()" class="p-2 text-slate-600 active:scale-90 transition-transform">
+                            <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                        </button>
+                        <h3 class="text-lg font-black text-slate-800">Alergias Críticas</h3>
+                    </div>
+                    <div id="list-settings-alergias" class="flex flex-wrap gap-2 mb-6"></div>
+                    <form onsubmit="addAlergia(event)" class="flex gap-2">
+                        <input id="new-alergia-input" type="text" required placeholder="Ej. Penicilina..." class="flex-1 border border-slate-200 rounded-xl py-3 px-3 text-sm outline-none focus:border-[#d32f2f]">
+                        <button type="submit" class="bg-[#d32f2f] text-white p-3 rounded-xl shadow-md"><i data-lucide="plus" class="w-5 h-5"></i></button>
                     </form>
                 </div>
             </section>
         
             <div id="nfc-action-container" class="flex justify-center mt-6 px-4">
-                <button id="write-nfc-btn" onclick="writeNFC()" class="w-full bg-slate-800 text-white py-3 rounded-2xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
+                <button onclick="writeNFC()" class="w-full bg-slate-800 text-white py-3 rounded-2xl font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
                     <i data-lucide="radio" class="w-5 h-5"></i> Guardar en NFC
                 </button>
             </div>
@@ -460,7 +536,7 @@
                     <div class="flex bg-slate-100 p-1 rounded-2xl">
                         <button onclick="filterMedications('mañana')" id="btn-manana" class="med-filter-btn flex-1 py-2 flex flex-col items-center gap-1 rounded-xl text-slate-500 font-bold text-xs transition-all">
                             <span>Mañana</span>
-                            <i data-lucide="check-circle-2" class="w-4 h-4 text-green-500 hidden" id="icon-manana"></i>
+                            <i data-lucide="sun" class="w-4 h-4"></i>
                         </button>
                         <button onclick="filterMedications('tarde')" id="btn-tarde" class="med-filter-btn active flex-1 py-2 flex flex-col items-center gap-1 rounded-xl bg-[#00529b] text-white shadow-md font-bold text-xs transition-all">
                             <span>Tarde</span>

@@ -160,25 +160,28 @@ export async function logout() {
 }
 
 export async function handleDeleteAccount() {
-    const confirmFirst = confirm("¿Estás completamente seguro de que deseas eliminar tu cuenta de VitalTip?\n\nEsta acción es irreversible y borrará de forma permanente todos tus datos.");
-    if (!confirmFirst) return;
-
-    const confirmSecond = prompt("Para confirmar la eliminación permanente, escribe la palabra 'ELIMINAR' en mayúsculas:");
-    if (confirmSecond !== 'ELIMINAR') {
-        alert("Confirmación incorrecta. El proceso de eliminación ha sido cancelado.");
+    // Leemos lo que el usuario ha escrito en la caja de texto
+    const confirmInput = document.getElementById('delete-confirm-input').value;
+    
+    // Validamos estrictamente
+    if (confirmInput !== 'ELIMINAR') {
+        alert("Debes escribir la palabra 'ELIMINAR' exactamente y en mayúsculas para poder borrar tu cuenta.");
         return;
     }
 
     try {
-        const { error } = await supabase.rpc('delete_user_account');
-        if (error) throw error;
-
-        alert("Tu cuenta y todo tu expediente médico han sido eliminados correctamente.");
+        // --- AQUÍ VA LA LLAMADA A SUPABASE PARA BORRAR ---
+         const { error } = await supabase.rpc('delete_user_account');
+         if (error) throw error;
         
-        document.getElementById('auth-container').classList.remove('hidden');
-        document.getElementById('app-container').classList.add('hidden');
-        document.getElementById('form-login').reset();
-        document.getElementById('form-register').reset();
+        
+        // Restauramos la vista de ajustes para la próxima vez
+        document.getElementById('delete-confirm-container').classList.add('hidden');
+        document.getElementById('init-delete-btn').classList.remove('hidden');
+        document.getElementById('delete-confirm-input').value = '';
+
+        // Cerramos la sesión en la app
+        logout();
 
     } catch (err) {
         console.error("Error crítico al eliminar la cuenta:", err);
@@ -222,3 +225,5 @@ function initAppWithUser(user) {
     renderHistorialTab();
     if (window.lucide) window.lucide.createIcons();
 }
+
+

@@ -151,10 +151,12 @@ export function showDataModal(data) {
     document.getElementById('modal-sangre').innerText = data.perfil.sangre || "--";
     
     const emergencyTel = data.telefono_emergencia || patientData.contactos.find(c => c.principal)?.telefono || "";
-    const idContainer = document.getElementById('modal-id').parentElement;
     
+    // 1. Quitamos el .parentElement y apuntamos directo al contenedor
+    const idContainer = document.getElementById('modal-id');
+    
+    // 2. Quitamos la etiqueta <p>Emergencia</p> de aquí porque ya está segura en el HTML
     idContainer.innerHTML = `
-        <p class="text-[9px] font-bold text-slate-400 uppercase">Emergencia</p>
         <a href="tel:${emergencyTel}" class="text-xs font-bold text-blue-600 flex items-center gap-1 mt-1">
             <i data-lucide="phone" class="w-3 h-3"></i> ${emergencyTel}
         </a>
